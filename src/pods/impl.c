@@ -12,15 +12,18 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <stdio.h>
-#include <ctype.h>
-#include <sys/sysinfo.h>
 #include "cpeabs.h"
 #include "cpeabs_ovsdb_utils.h"
+#include <ctype.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/sysinfo.h>
 
 #define BFR_SIZE_16  16
 #define BFR_SIZE_32  32
@@ -34,14 +37,18 @@
 #define MAKE_STR(x) _MAKE_STR(x)
 #define _MAKE_STR(x) #x
 
-#define OSP_PSTORE_ACCOUNT MAKE_STR(PS_FILE_PATH) ACCOUNT_FILE
-#define WEBCONFIG_CONFIG_PS_FILE MAKE_STR(PS_FILE_PATH) WEBCFG_CFG_FILE
+#define OSP_PSTORE_ACCOUNT \
+    MAKE_STR(PS_FILE_PATH) \
+    ACCOUNT_FILE
+#define WEBCONFIG_CONFIG_PS_FILE \
+    MAKE_STR(PS_FILE_PATH)       \
+    WEBCFG_CFG_FILE
 
 #define OSP_PSTORE_REBOOT "/var/run/osp_reboot_reason"
 #define WEBCFG_RFC_PARAM "Device.X_RDK_WebConfig.RfcEnable"
 #define PARAM_RFC_ENABLE "eRT.com.cisco.spvtg.ccsp.webpa.WebConfigRfcEnable"
 #define WEBCFG_URL_PARAM "Device.X_RDK_WebConfig.URL"
-#define WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM  "Device.X_RDK_WebConfig.SupplementaryServiceUrls.Telemetry"
+#define WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM "Device.X_RDK_WebConfig.SupplementaryServiceUrls.Telemetry"
 
 #define WEBCFG_MAX_PARAM_LEN 128
 #define RETURN_OK 0
@@ -52,38 +59,37 @@ char deviceMAC[BFR_SIZE_64];
 /*----------------------------------------------------------------------------*/
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
-void macIDToLower(char macValue[],char macConverted[]);
+void macIDToLower(char macValue[], char macConverted[]);
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
 void cpeabStrncpy(char *destStr, const char *srcStr, size_t destSize)
 {
-    strncpy(destStr, srcStr, destSize-1);
-    destStr[destSize-1] = '\0';
+    strncpy(destStr, srcStr, destSizei - 1);
+    destStr[destSize - 1] = '\0';
 }
 
-bool json_string_value_get(char *key, char* value_str, size_t len)
+bool json_string_value_get(char *key, char *value_str, size_t len)
 {
-        json_t *json;
-        json_error_t error;
-        json_t *value;
-        bool ret = false;
+    json_t *json;
+    json_error_t error;
+    json_t *value;
+    bool ret = false;
 
-        json = json_load_file(WEBCONFIG_CONFIG_PS_FILE, 0, &error);
-        if(!json) 
-        {
-                WebcfgError("Failed to load %s",WEBCONFIG_CONFIG_PS_FILE);
-                return ret;
-        }
+    json = json_load_file(WEBCONFIG_CONFIG_PS_FILE, 0, &error);
+    if (!json)
+    {
+        WebcfgError("Failed to load %s", WEBCONFIG_CONFIG_PS_FILE);
+        return ret;
+    }
 
         value = json_object_get(json, key);
         if (value)
         {
-                cpeabStrncpy(value_str,json_string_value(value),len);
-                WebcfgInfo("%s : Fetched [%s] = [%s]. \n",__func__,key,value_str);
-                ret = true;
-        }
-        else
+            cpeabStrncpy(value_str, json_string_value(value), len);
+            WebcfgInfo("%s : Fetched [%s] = [%s]. \n", __func__, key, value_str);
+            ret = true;
+        } else
         {
                 WebcfgError("Json value is Null.\n");
         }
@@ -91,7 +97,7 @@ bool json_string_value_get(char *key, char* value_str, size_t len)
         return ret;
 }
 
-bool json_string_value_set(char *key, char* value_str)
+bool json_string_value_set(char *key, char *value_str)
 {
         json_t *json;
         json_error_t error;
@@ -109,14 +115,13 @@ bool json_string_value_set(char *key, char* value_str)
 
         if (json_object_set(json, key, value_json) == RETURN_OK)
         {
-                WebcfgInfo("%s : Successfully set : [%s] = [%s] \n",__func__,key,value_str);
-                if (json_dump_file(json,WEBCONFIG_CONFIG_PS_FILE,0) == RETURN_OK )
-                {
-                        WebcfgInfo("Successfully Written to file. \n");
-                        ret = true;
-                }
-        }
-        else
+            WebcfgInfo("%s : Successfully set : [%s] = [%s] \n", __func__, key, value_str);
+            if (json_dump_file(json, WEBCONFIG_CONFIG_PS_FILE, 0) == RETURN_OK)
+            {
+                WebcfgInfo("Successfully Written to file. \n");
+                ret = true;
+            }
+        } else
         {
                 WebcfgError("Json value is Null.\n");
         }
@@ -154,30 +159,30 @@ void macIDToLower(char macValue[],char macConverted[])
 
 char* get_deviceMAC()
 {
-        if(strlen(deviceMAC) != 0)
-        {
-                WebcfgDebug("deviceMAC returned %s\n", deviceMAC);
-                return deviceMAC;
-        }
+    if (strlen(deviceMAC) != 0)
+    {
+        WebcfgDebug("deviceMAC returned %s\n", deviceMAC);
+        return deviceMAC;
+    }
 
         json_t *where = json_array();
         char *table = "Wifi_Inet_State";
-        char *colv[] = {"hwaddr"};
+        char *colv[] = { "hwaddr" };
         char buff[BFR_SIZE_64];
         char *where_str = "if_name==eth0";
 
-        if (!ovsdb_parse_where(where,where_str, false))
+        if (!ovsdb_parse_where(where, where_str, false))
         {
-                WebcfgError("Error parsing WHERE statement: %s",where_str);
+            WebcfgError("Error parsing WHERE statement: %s", where_str);
         }
-        memset(deviceMAC,0,sizeof(deviceMAC));
-        memset(buff,0,sizeof(buff));
+        memset(deviceMAC, 0, sizeof(deviceMAC));
+        memset(buff, 0, sizeof(buff));
         WebcfgDebug("Reaching after memset of buff inside get devicemac\n");
-        if (ovsdb_string_value_get(table,where,1,colv,buff,sizeof(buff)))
+        if (ovsdb_string_value_get(table, where, 1, colv, buff, sizeof(buff)))
         {
                 WebcfgDebug("Reaching after ovsdb_string_value_get success inside get devicemac\n");
                 macIDToLower(buff, deviceMAC);
-                WebcfgDebug("deviceMAC returned from lib in converted format is: %s\n",deviceMAC);
+                WebcfgDebug("deviceMAC returned from lib in converted format is: %s\n", deviceMAC);
                 return deviceMAC;
         }
         else
@@ -200,23 +205,22 @@ char * getSerialNumber()
         char *colv[] = {"serial_number"};
         char buff[BFR_SIZE_64];
         char *serialNum = NULL;
-  
-        serialNum = malloc(BFR_SIZE_64*sizeof(char));
+
+        serialNum = malloc(BFR_SIZE_64 * sizeof(char));
         if (!serialNum)
         {
-                WebcfgError("%s : serialNum couldnt be assigned with memory\n",__func__);
-                return NULL;
+            WebcfgError("%s : serialNum couldnt be assigned with memory\n", __func__);
+            return NULL;
         }
 
-        memset(buff,0,sizeof(buff));
+        memset(buff, 0, sizeof(buff));
 
-        if (ovsdb_string_value_get(table,where,1,colv,buff,sizeof(buff)))
+        if (ovsdb_string_value_get(table, where, 1, colv, buff, sizeof(buff)))
         {
                 WebcfgDebug("serialNum returned from lib is %s\n", buff);
-                cpeabStrncpy(serialNum,buff,BFR_SIZE_64*sizeof(char));
+                cpeabStrncpy(serialNum, buff, BFR_SIZE_64 * sizeof(char));
                 return serialNum;
-        }
-        else
+        } else
         {
                 WebcfgError("Failed to GetValue for serialNum\n");
                 return NULL;
@@ -227,128 +231,125 @@ char * getDeviceBootTime()
 {
         json_t *where = json_array();
         char *table = "AWLAN_Node";
-        char *colv[] = {"boot_time"};
+        char *colv[] = { "boot_time" };
         char buff[BFR_SIZE_64];
         char *bootTime = NULL;
 
-        bootTime = malloc(BFR_SIZE_64*sizeof(char));
+        bootTime = malloc(BFR_SIZE_64 * sizeof(char));
         if (!bootTime)
         {
-                WebcfgError("%s : bootTime couldnt be assigned with memory\n",__func__);
-                return NULL;
+            WebcfgError("%s : bootTime couldnt be assigned with memory\n", __func__);
+            return NULL;
         }
 
-        memset(buff,0,sizeof(buff));
+        memset(buff, 0, sizeof(buff));
 
-        if (ovsdb_string_value_get(table,where,1,colv,buff,sizeof(buff)))
+        if (ovsdb_string_value_get(table, where, 1, colv, buff, sizeof(buff)))
         {
                 WebcfgDebug("bootTime returned from lib is %s\n", buff);
-                cpeabStrncpy(bootTime,buff,BFR_SIZE_64*sizeof(char));
+                cpeabStrncpy(bootTime, buff, BFR_SIZE_64 * sizeof(char));
                 return bootTime;
-        }
-        else
+        } else
         {
                 WebcfgError("Failed to GetValue for bootTime\n");
                 return NULL;
         }
 }
 
-char * getProductClass()
+char *getProductClass()
 {
         char *productClass = NULL;
-        productClass = malloc(BFR_SIZE_16*sizeof(char));
+        productClass = malloc(BFR_SIZE_16 * sizeof(char));
         if (!productClass)
         {
-                WebcfgError("%s : productClass couldnt be assigned with memory\n",__func__);
-                return NULL;
+            WebcfgError("%s : productClass couldnt be assigned with memory\n", __func__);
+            return NULL;
         }
-        cpeabStrncpy(productClass,"XE2",BFR_SIZE_16*sizeof(char));
+        cpeabStrncpy(productClass, "XE2", BFR_SIZE_16 * sizeof(char));
         return productClass;
 }
 
-char * getModelName()
+char *getModelName()
 {
         json_t *where = json_array();
         char *table = "AWLAN_Node";
-        char *colv[] = {"model"};
+        char *colv[] = { "model" };
         char buff[BFR_SIZE_64];
         char *modelName = NULL;
 
-        modelName = malloc(BFR_SIZE_64*sizeof(char));
+        modelName = malloc(BFR_SIZE_64 * sizeof(char));
         if (!modelName)
         {
-                WebcfgError("%s : modelName couldnt be assigned with memory\n",__func__);
-                return NULL;
+            WebcfgError("%s : modelName couldnt be assigned with memory\n", __func__);
+            return NULL;
         }
 
-        memset(buff,0,sizeof(buff));
+        memset(buff, 0, sizeof(buff));
 
-        if (ovsdb_string_value_get(table,where,1,colv,buff,sizeof(buff)))
+        if (ovsdb_string_value_get(table, where, 1, colv, buff, sizeof(buff)))
         {
                 WebcfgDebug("modelName returned from lib is %s\n", buff);
-                cpeabStrncpy(modelName,buff,BFR_SIZE_64*sizeof(char));
+                cpeabStrncpy(modelName, buff, BFR_SIZE_64 * sizeof(char));
                 return modelName;
-        }
-        else
+        } else
         {
                 WebcfgError("Failed to GetValue for modelName\n");
                 return NULL;
         }
 }
 
-char * getFirmwareVersion()
+char *getFirmwareVersion()
 {
         json_t *where = json_array();
         char *table = "AWLAN_Node";
-        char *colv[] = {"firmware_version"};
+        char *colv[] = { "firmware_version" };
         char buff[BFR_SIZE_64];
         char *firmware_version = NULL;
 
-        firmware_version = malloc(BFR_SIZE_64*sizeof(char));
+        firmware_version = malloc(BFR_SIZE_64 * sizeof(char));
         if (!firmware_version)
         {
-                WebcfgError("%s : firmware_version couldnt be assigned with memory\n",__func__);
-                return NULL;
+            WebcfgError("%s : firmware_version couldnt be assigned with memory\n", __func__);
+            return NULL;
         }
 
-        memset(buff,0,sizeof(buff));
+        memset(buff, 0, sizeof(buff));
 
-        if (ovsdb_string_value_get(table,where,1,colv,buff,sizeof(buff)))
+        if (ovsdb_string_value_get(table, where, 1, colv, buff, sizeof(buff)))
         {
                 WebcfgDebug("firmwareVersion returned from lib is %s\n", buff);
-                cpeabStrncpy(firmware_version,buff,BFR_SIZE_64*sizeof(char));
+                cpeabStrncpy(firmware_version, buff, BFR_SIZE_64 * sizeof(char));
                 return firmware_version;
-        }
-        else
+        } else
         {
                 WebcfgError("Failed to GetValue for firmwareVersion\n");
                 return NULL;
         }
 }
 
-char * getConnClientParamName()
+char *getConnClientParamName()
 {
         return NULL;
 }
 
-char * getRebootReason()
+char *getRebootReason()
 {
         FILE *rebptr = NULL;
         char reboot_type[BFR_SIZE_64];
         char reboot_str[BFR_SIZE_32];
         char reboot_osprsn[BFR_SIZE_128];
         char reboot_fileresp[BFR_SIZE_256];
-	char * reboot_reason = NULL;
+        char *reboot_reason = NULL;
 
-        reboot_reason = malloc(BFR_SIZE_64*sizeof(char));
+        reboot_reason = malloc(BFR_SIZE_64 * sizeof(char));
         if (!reboot_reason)
         {
-                WebcfgError("%s : reboot_reason couldnt be assigned with memory\n",__func__);
-                return NULL;
+            WebcfgError("%s : reboot_reason couldnt be assigned with memory\n", __func__);
+            return NULL;
         }
 
-        memset(reboot_type,0,sizeof(reboot_type));
-        memset(reboot_str,0,sizeof(reboot_str));
+        memset(reboot_type, 0, sizeof(reboot_type));
+        memset(reboot_str, 0, sizeof(reboot_str));
         memset(reboot_fileresp, 0, sizeof(reboot_fileresp));
         memset(reboot_osprsn, 0, sizeof(reboot_osprsn));
         if ((rebptr = fopen(OSP_PSTORE_REBOOT, "r")) == NULL) 
@@ -359,26 +360,24 @@ char * getRebootReason()
         if( fgets(reboot_fileresp, sizeof(reboot_fileresp), rebptr) != NULL )
         {
                 sscanf(reboot_fileresp, "%31s  %63s %127[^\n]", reboot_str, reboot_type, reboot_osprsn);
-        }
-        else
+        } else
         {
                 WebcfgError("Error! Output from file %s couldnt be parsed.", OSP_PSTORE_REBOOT);
                 return NULL;
         }
-        cpeabStrncpy(reboot_reason,reboot_type,BFR_SIZE_64*sizeof(char));
+        cpeabStrncpy(reboot_reason, reboot_type, BFR_SIZE_64 * sizeof(char));
         if (strlen(reboot_reason) > 0)
         {
                 WebcfgDebug("Reboot reason returned from lib is %s\n", reboot_reason);
                 return reboot_reason;
-        }
-        else
+        } else
         {
                 WebcfgError("Failed to GetValue for reboot_reason\n");
                 return NULL;
         }
 }
 
-char * cutting_delimiters(char *pstore_content, char * PATTERN1, char *PATTERN2)
+char *cutting_delimiters(char *pstore_content, char *PATTERN1, char *PATTERN2)
 {
         char *start, *end;
         char *target = NULL;
@@ -387,9 +386,9 @@ char * cutting_delimiters(char *pstore_content, char * PATTERN1, char *PATTERN2)
                 start += strlen(PATTERN1);
                 if ((end = strstr(start, PATTERN2)))
                 {
-                        target = (char *)malloc(end-start+1);
-                        memcpy(target,start,end-start);
-                        target[end-start] = '\0';
+                    target = (char *)malloc(end - start + 1);
+                    memcpy(target, start, end - start);
+                    target[end - start] = '\0';
                 }
         }
         return target;

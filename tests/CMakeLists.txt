@@ -11,6 +11,9 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
+#
+#   SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+#   SPDX-License-Identifier: Apache-2.0
 
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -W -g -fprofile-arcs -ftest-coverage -O0")
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DTEST ")

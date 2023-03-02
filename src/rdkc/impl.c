@@ -12,6 +12,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 #include <stdlib.h>
 #include <stdbool.h>
@@ -208,11 +211,11 @@ char * getDeviceBootTime()
 
 char * getProductClass()
 {
-    char *productClass = (char *) malloc(sizeof(char) * strlen("CAMERA") + 1);
+    char *productClass = (char *)malloc(sizeof(char) * strlen("CAMERA") + 1);
     strcpy(productClass, "CAMERA");
 
-    if(productClass)
-      WebcfgDebug("productClass returned from lib is %s\n", "CAMERA");
+    if (productClass)
+        WebcfgDebug("productClass returned from lib is %s\n", "CAMERA");
     return productClass;
 }
 

@@ -12,33 +12,36 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <sys/wait.h>
+#include <ctype.h>
+#include <errno.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <unistd.h>
-#include <errno.h>
 #include <string.h>
-#include <ctype.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
-#include "cpeabs_ovsdb_utils.h"
 #include "cpeabs.h"
+#include "cpeabs_ovsdb_utils.h"
 
-static int  g_ovsdb_handle = -1;
+static int g_ovsdb_handle = -1;
 static char ovsdb_opt_db[32] = "Open_vSwitch";
-static int  ovsdb_where_num = 0;
+static int ovsdb_where_num = 0;
 static char **ovsdb_where_expr = NULL;
 
 int ovsdb_connect(void);
 void ovsdb_close(int fd);
-static json_t  *ovsdb_json_exec(char *method, json_t *params);
-static bool     ovsdb_json_error(json_t *jres);
+static json_t *ovsdb_json_exec(char *method, json_t *params);
+static bool ovsdb_json_error(json_t *jres);
 static bool ovsdb_parse_columns(json_t *columns, int colc, char *colv[]);
 json_t *json_value(char *str);
 
@@ -51,11 +54,10 @@ int ovsdb_util_init()
 
     db = ovsdb_connect();
     if (db < 0) {
-        WebcfgError("%s : Failed to connect to ovsdb. \n",__func__);
-    }
-    else
+        WebcfgError("%s : Failed to connect to ovsdb. \n", __func__);
+    } else
     {
-        WebcfgError("%s : Successfully connected to ovsdb \n",__func__);
+        WebcfgError("%s : Successfully connected to ovsdb \n", __func__);
         g_ovsdb_handle = db;
     }
     return db;
@@ -87,7 +89,7 @@ int ovsdb_handle_get()
  */
 int ovsdb_connect(void)
 {
-    struct sockaddr_un  addr;
+    struct sockaddr_un addr;
 
     int fd = -1;
 
@@ -249,8 +251,7 @@ bool str_is_quoted(char *str)
 {
     size_t len = strlen(str);
 
-    if ((str[0] == '"' && str[len - 1] == '"') ||
-            (str[0] == '\'' && str[len - 1] == '\''))
+    if ((str[0] == '"' && str[len - 1] == '"') || (str[0] == '\'' && str[len - 1] == '\''))
     {
         return true;
     }
@@ -288,8 +289,7 @@ json_t *json_value(char *str)
     if (strcmp(str, "true") == 0)
     {
         return json_true();
-    }
-    else if (strcmp(str, "false") == 0)
+    } else if (strcmp(str, "false") == 0)
     {
         return json_false();
     }
@@ -310,8 +310,8 @@ json_t *json_value(char *str)
     char *str_set = "[\"set\",";
     char *str_uuid = "[\"uuid\",";
     if (!strncmp(str, str_map, strlen(str_map))
-            || !strncmp(str, str_set, strlen(str_set))
-            || !strncmp(str, str_uuid, strlen(str_uuid)))
+        || !strncmp(str, str_set, strlen(str_set))
+        || !strncmp(str, str_uuid, strlen(str_uuid)))
     {
         // Try to parse rval as a json object
         json_t *jobj = json_loads(str, 0, NULL);
@@ -337,15 +337,14 @@ static bool ovsdb_parse_columns(json_t *columns, int colc, char *colv[])
 
     for (ii = 0; ii < colc; ii++)
     {
-        char    col[OVSDB_COL_STR];
+        char col[OVSDB_COL_STR];
 
         /*
          * Use only the "left" value of an expression
          */
         char *lval, *op, *rval;
 
-        static char *delim[] =
-        {
+        static char *delim[] = {
             ":=",
             "::",
             "~=",
@@ -363,16 +362,14 @@ static bool ovsdb_parse_columns(json_t *columns, int colc, char *colv[])
             /*Not an expression, use whole line as left value */
             lval = colv[ii];
             rval = NULL;
-        }
-        else
+        } else
         {
             /* Depending on the operator, do different things with rval */
             if (strcmp(op, ":=") == 0)
             {
                 /* := standard right value processing */
                 jrval = json_value(rval);
-            }
-            else if (strcmp(op, "::") == 0)
+            } else if (strcmp(op, "::") == 0)
             {
                 /* Try to parse rval as a json object */
                 jrval = json_loads(rval, 0, NULL);
@@ -381,13 +378,11 @@ static bool ovsdb_parse_columns(json_t *columns, int colc, char *colv[])
                     WebcfgError("Error decoding column right value: %s\n", rval);
                     return false;
                 }
-            }
-            else if (strcmp(op, "~=") == 0)
+            } else if (strcmp(op, "~=") == 0)
             {
                 /* Force right value to string */
                 jrval = json_string(rval);
-            }
-            else
+            } else
             {
                 WebcfgError("Error decoding column operator: %s\n", op);
                 return false;
@@ -401,15 +396,13 @@ static bool ovsdb_parse_columns(json_t *columns, int colc, char *colv[])
             {
                 goto error;
             }
-        }
-        else if (json_is_object(columns) && rval != NULL)
+        } else if (json_is_object(columns) && rval != NULL)
         {
             if (json_object_set_new(columns, lval, jrval) != 0)
             {
                 goto error;
             }
-        }
-        else
+        } else
         {
             WebcfgError("Parameter is not an object or array.\n");
             goto error;
@@ -459,9 +452,9 @@ json_t *ovsdb_json_exec(char *method, json_t *params)
 {
     char buf[2048];
 
-    char   *str = NULL;
+    char *str = NULL;
     json_t *jres = NULL;
-    int     db = -1;
+    int db = -1;
 
     json_t *jexec = json_pack("{ s:s, s:o, s:i }", "method", method, "params", params, "id", getpid());
 
@@ -509,8 +502,7 @@ bool ovsdb_parse_where(json_t *where, char *_str, bool is_parent_where)
 
     cpeabStrncpy(str, _str, sizeof(str));
 
-    static char *where_delims[] =
-    {
+    static char *where_delims[] = {
         "==",
         "!=",
         ":inc:",
@@ -529,12 +521,10 @@ bool ovsdb_parse_where(json_t *where, char *_str, bool is_parent_where)
     if (strcmp(op, ":inc:") == 0)
     {
         op = "includes";
-    }
-    else if (strcmp(op, ":exc:") == 0)
+    } else if (strcmp(op, ":exc:") == 0)
     {
         op = "excludes";
-    }
-    else
+    } else
     {
         /* Other ovsh operators (where_delims) match 1:1 to ovsdb operators */
     }
@@ -580,8 +570,8 @@ bool ovsdb_parse_where(json_t *where, char *_str, bool is_parent_where)
     if (!is_parent_where)
     {
         ovsdb_where_num++;
-        ovsdb_where_expr = (char**)realloc(ovsdb_where_expr, sizeof(char**) * ovsdb_where_num);
-        ovsdb_where_expr[ovsdb_where_num-1] = strdup(_str);
+        ovsdb_where_expr = (char **)realloc(ovsdb_where_expr, sizeof(char **) * ovsdb_where_num);
+        ovsdb_where_expr[ovsdb_where_num - 1] = strdup(_str);
     }
 
 error:
@@ -590,7 +580,7 @@ error:
     return retval;
 }
 
-bool ovsdb_string_value_get(char *table,json_t *where, int coln, char * colv[],char *result_str, unsigned int len )
+bool ovsdb_string_value_get(char *table, json_t *where, int coln, char *colv[], char *result_str, unsigned int len)
 
 {
     int handle = -1;
@@ -614,24 +604,23 @@ bool ovsdb_string_value_get(char *table,json_t *where, int coln, char * colv[],c
     }
 
     if (jrows != NULL || (json_array_size(jrows) > 0)) {
-        result = json_object_get(json_array_get(jrows,0),colv[0]);
+        result = json_object_get(json_array_get(jrows, 0), colv[0]);
         if (result)
         {
             if (json_is_string(result)) {
-                cpeabStrncpy(result_str,json_string_value(result),len);
+                cpeabStrncpy(result_str, json_string_value(result), len);
                 ret = true;
             } else if (json_is_integer(result)) {
-                snprintf(result_str,len, "%lld",json_integer_value(result));
+                snprintf(result_str, len, "%lld", json_integer_value(result));
                 ret = true;
             } else {
                 WebcfgError(" Un supported value type.\n");
             }
-        }
-        else {
+        } else {
             WebcfgError("JROWS is null or Json Array size is less than 0\n");
         }
     }
-exit :
-        ovsdb_util_fini();
-        return ret;
+exit:
+    ovsdb_util_fini();
+    return ret;
 }

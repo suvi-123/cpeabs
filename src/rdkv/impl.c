@@ -12,41 +12,44 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * SPDX-FileCopyrightText: 2021 Comcast Cable Communications Management, LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <rbus/rbus.h>
-#include <stdio.h>
-#include <sys/sysinfo.h>
-#include <cjson/cJSON.h>
 #include "cpeabs.h"
+#include <cjson/cJSON.h>
+#include <ctype.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <rbus/rbus.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/sysinfo.h>
+#include <unistd.h>
 /*----------------------------------------------------------------------------*/
 /*                                   Macros                                   */
 /*----------------------------------------------------------------------------*/
-#define DEVICE_MAC          "Device.DeviceInfo.X_COMCAST-COM_STB_MAC"
-#define MODEL_NAME          "Device.DeviceInfo.ModelName"
-#define SERIAL_NUMBER       "Device.DeviceInfo.SerialNumber"
-#define FIRMWARE_VERSION    "Device.DeviceInfo.X_RDK_FirmwareName"
-#define DEVICE_BOOT_TIME    "Device.DeviceInfo.X_RDKCENTRAL-COM_BootTime"
-#define PRODUCT_CLASS       "Device.DeviceInfo.ProductClass"
-#define LAST_REBOOT_REASON  "Device.DeviceInfo.X_RDKCENTRAL-COM_LastRebootReason"
-#define PARTNER_ID          "Device.DeviceInfo.X_RDKCENTRAL-COM_Syndication.PartnerId"
-#define ACCOUNT_ID          "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.AccountInfo.AccountID"
+#define DEVICE_MAC "Device.DeviceInfo.X_COMCAST-COM_STB_MAC"
+#define MODEL_NAME "Device.DeviceInfo.ModelName"
+#define SERIAL_NUMBER "Device.DeviceInfo.SerialNumber"
+#define FIRMWARE_VERSION "Device.DeviceInfo.X_RDK_FirmwareName"
+#define DEVICE_BOOT_TIME "Device.DeviceInfo.X_RDKCENTRAL-COM_BootTime"
+#define PRODUCT_CLASS "Device.DeviceInfo.ProductClass"
+#define LAST_REBOOT_REASON "Device.DeviceInfo.X_RDKCENTRAL-COM_LastRebootReason"
+#define PARTNER_ID "Device.DeviceInfo.X_RDKCENTRAL-COM_Syndication.PartnerId"
+#define ACCOUNT_ID "Device.DeviceInfo.X_RDKCENTRAL-COM_RFC.Feature.AccountInfo.AccountID"
 
 #define WEBCFG_MAX_PARAM_LEN 128
 #define WEBCFG_RFC_PARAM "Device.X_RDK_WebConfig.RfcEnable"
 #define WEBCFG_URL_PARAM "Device.X_RDK_WebConfig.URL"
-#define WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM  "Device.X_RDK_WebConfig.SupplementaryServiceUrls.Telemetry"
+#define WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM "Device.X_RDK_WebConfig.SupplementaryServiceUrls.Telemetry"
 
 #define PARAM_RFC_ENABLE "eRT.com.cisco.spvtg.ccsp.webpa.WebConfigRfcEnable"
 
 #define WEBCFG_PARTNER_JSON_FILE "/etc/partners_defaults_webcfg_video.json"
-#define WEBCFG_DB_STORE          "/opt/.webconfig.json"
+#define WEBCFG_DB_STORE "/opt/.webconfig.json"
 
 #define RETURN_OK 0
 #define RETURN_ERR -1
@@ -54,8 +57,7 @@
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-typedef struct
-{
+typedef struct {
     char *paramName;
     char *paramValue;
     rbusValueType_t type;
@@ -72,7 +74,7 @@ typedef struct _webcfgValue
 /*----------------------------------------------------------------------------*/
 /*                            File Scoped Variables                           */
 /*----------------------------------------------------------------------------*/
-char deviceMAC[32]={'\0'};
+char deviceMAC[32] = { '\0' };
 bool isInited = false;
 webCfgValue_t webCfgPersist;
 
@@ -80,7 +82,7 @@ webCfgValue_t webCfgPersist;
 /*                             Function Prototypes                            */
 /*----------------------------------------------------------------------------*/
 void __attribute__((weak)) getValues_rbus(const char *paramName[], const unsigned int paramCount, int index, money_trace_spans *timeSpan, param_t ***paramArr, int *retValCount, WDMP_STATUS *retStatus);
-void macIDToLower(char macValue[],char macConverted[]);
+void macIDToLower(char macValue[], char macConverted[]);
 void cpeabStrncpy(char *destStr, const char *srcStr, size_t destSize);
 /*----------------------------------------------------------------------------*/
 /*                             External Functions                             */
@@ -90,14 +92,14 @@ void cpeabStrncpy(char *destStr, const char *srcStr, size_t destSize)
     snprintf(destStr, destSize, "%s", srcStr);
 }
 
-cJSON* load_partner_json_file(const char* fileName)
+cJSON *load_partner_json_file(const char *fileName)
 {
     long len = 0;
     cJSON *json;
     char *JSON_content;
 
-    FILE* fp = fopen(fileName, "rb");
-    if(!fp)
+    FILE *fp = fopen(fileName, "rb");
+    if (!fp)
     {
         printf("open file %s failed.\n", WEBCFG_PARTNER_JSON_FILE);
         return NULL;
@@ -105,16 +107,16 @@ cJSON* load_partner_json_file(const char* fileName)
 
     fseek(fp, 0, SEEK_END);
     len = ftell(fp);
-    if(0 == len)
+    if (0 == len)
     {
         return NULL;
     }
 
     fseek(fp, 0, SEEK_SET);
-    JSON_content = (char*) malloc((len +1));
+    JSON_content = (char *)malloc((len + 1));
     fread(JSON_content, 1, len, fp);
-    
-    JSON_content[len-1] = '\0';
+
+    JSON_content[len - 1] = '\0';
     json = cJSON_Parse(JSON_content);
     if (json == NULL)
     {
@@ -126,17 +128,17 @@ cJSON* load_partner_json_file(const char* fileName)
     return json;
 }
 
-cJSON* read_json_file(cJSON *parser,char *partnerId)
+cJSON *read_json_file(cJSON *parser, char *partnerId)
 {
-    cJSON *json=parser;
-    char *part_id=partnerId;
+    cJSON *json = parser;
+    char *part_id = partnerId;
     cJSON *item = NULL;
 
-    item=cJSON_GetObjectItem(json,part_id);
+    item = cJSON_GetObjectItem(json, part_id);
     return item;
 }
 
-void macIDToLower(char macValue[],char macConverted[])
+void macIDToLower(char macValue[], char macConverted[])
 {
     int i = 0;
     int j;
@@ -144,7 +146,7 @@ void macIDToLower(char macValue[],char macConverted[])
     char tmp[32];
     cpeabStrncpy(tmp, macValue, sizeof(tmp));
     token[i] = strtok(tmp, ":");
-    if(token[i]!=NULL)
+    if (token[i] != NULL)
     {
         cpeabStrncpy(macConverted, token[i], 32);
         i++;
@@ -152,19 +154,19 @@ void macIDToLower(char macValue[],char macConverted[])
     while ((token[i] = strtok(NULL, ":")) != NULL)
     {
         strncat(macConverted, token[i], 31);
-            macConverted[31]='\0';
+        macConverted[31] = '\0';
         i++;
     }
-    macConverted[31]='\0';
-    for(j = 0; macConverted[j]; j++)
+    macConverted[31] = '\0';
+    for (j = 0; macConverted[j]; j++)
     {
         macConverted[j] = tolower(macConverted[j]);
     }
 }
 
-char* get_deviceMAC()
+char *get_deviceMAC()
 {
-    if(strlen(deviceMAC) != 0)
+    if (strlen(deviceMAC) != 0)
     {
         WebcfgDebug("deviceMAC returned %s\n", deviceMAC);
         return deviceMAC;
@@ -175,22 +177,22 @@ char* get_deviceMAC()
     macID = getParamValue(DEVICE_MAC);
     if (macID != NULL)
     {
-        cpeabStrncpy(deviceMACValue, macID, strlen(macID)+1);
+        cpeabStrncpy(deviceMACValue, macID, strlen(macID) + 1);
         macIDToLower(deviceMACValue, deviceMAC);
-        WebcfgDebug("deviceMAC: %s\n",deviceMAC);
+        WebcfgDebug("deviceMAC: %s\n", deviceMAC);
         CPEABS_FREE(macID);
     }
     WebcfgDebug("deviceMAC returned from lib is %s\n", deviceMAC);
     return deviceMAC;
 }
 
-char* get_deviceWanMAC()
+char *get_deviceWanMAC()
 {
 	//TODO:return the wan mac value
 	return NULL;
 }
 
-char * getSerialNumber()
+char *getSerialNumber()
 {
     char *serialNum = NULL;
     serialNum = getParamValue(SERIAL_NUMBER);
@@ -198,7 +200,7 @@ char * getSerialNumber()
     return serialNum;
 }
 
-char * getDeviceBootTime()
+char *getDeviceBootTime()
 {
     char *bootTime = NULL;
     bootTime = getParamValue(DEVICE_BOOT_TIME);
@@ -206,7 +208,7 @@ char * getDeviceBootTime()
     return bootTime;
 }
 
-char * getProductClass()
+char *getProductClass()
 {
     char *productClass = NULL;
     productClass = getParamValue(PRODUCT_CLASS);
@@ -214,7 +216,7 @@ char * getProductClass()
     return productClass;
 }
 
-char * getModelName()
+char *getModelName()
 {
     char *modelName = NULL;
     modelName = getParamValue(MODEL_NAME);
@@ -222,7 +224,7 @@ char * getModelName()
     return modelName;
 }
 
-char * getFirmwareVersion()
+char *getFirmwareVersion()
 {
     char *firmware = NULL;
     firmware = getParamValue(FIRMWARE_VERSION);
@@ -230,12 +232,12 @@ char * getFirmwareVersion()
     return firmware;
 }
 
-char * getConnClientParamName()
+char *getConnClientParamName()
 {
     return NULL;
 }
 
-char * getRebootReason()
+char *getRebootReason()
 {
     char *reboot_reason = NULL;
     reboot_reason = getParamValue(LAST_REBOOT_REASON);
@@ -243,7 +245,7 @@ char * getRebootReason()
     return reboot_reason;
 }
 
-char * getPartnerID()
+char *getPartnerID()
 {
     char *partnerId = NULL;
     partnerId = getParamValue(PARTNER_ID);
@@ -251,7 +253,7 @@ char * getPartnerID()
     return partnerId;
 }
 
-char * getAccountID()
+char *getAccountID()
 {
     char *accountId = NULL;
     accountId = getParamValue(ACCOUNT_ID);
@@ -259,39 +261,38 @@ char * getAccountID()
     return accountId;
 }
 
-char * getFirmwareUpgradeStartTime()
+char *getFirmwareUpgradeStartTime()
 {
-	return NULL;
+    return NULL;
 }
 
-char * getFirmwareUpgradeEndTime()
+char *getFirmwareUpgradeEndTime()
 {
-	return NULL;
+    return NULL;
 }
 
-char * getParamValue(char *paramName)
+char *getParamValue(char *paramName)
 {
     int paramCount=0;
     WDMP_STATUS ret = WDMP_FAILURE;
-    int count=0;
+    int count = 0;
     const char *getParamList[1];
     getParamList[0] = paramName;
 
-    char *paramValue = (char *) malloc(sizeof(char)*64);
-    paramCount = sizeof(getParamList)/sizeof(getParamList[0]);
-    param_t **parametervalArr = (param_t **) malloc(sizeof(param_t *) * paramCount);
+    char *paramValue = (char *)malloc(sizeof(char) * 64);
+    paramCount = sizeof(getParamList) / sizeof(getParamList[0]);
+    param_t **parametervalArr = (param_t **)malloc(sizeof(param_t *) * paramCount);
 
-    WebcfgDebug("paramName : %s paramCount %d\n",getParamList[0], paramCount);
+    WebcfgDebug("paramName : %s paramCount %d\n", getParamList[0], paramCount);
     getValues_rbus(getParamList, paramCount, 0, NULL, &parametervalArr, &count, &ret);
 
-    if (ret == WDMP_SUCCESS )
+    if (ret == WDMP_SUCCESS)
     {
-        cpeabStrncpy(paramValue, parametervalArr[0]->value,64);
+        cpeabStrncpy(paramValue, parametervalArr[0]->value, 64);
         CPEABS_FREE(parametervalArr[0]->name);
         CPEABS_FREE(parametervalArr[0]->value);
         CPEABS_FREE(parametervalArr[0]);
-    }
-    else
+    } else
     {
         WebcfgError("Failed to GetValue for %s\n", getParamList[0]);
         CPEABS_FREE(paramValue);
@@ -301,11 +302,11 @@ char * getParamValue(char *paramName)
     return paramValue;
 }
 
-void writeToFile(char* pText)
+void writeToFile(char *pText)
 {
     FILE* fpw = fopen(WEBCFG_DB_STORE, "wb");
     if (fpw == NULL) {
-        printf("Failed to open file- %s",WEBCFG_DB_STORE);
+        printf("Failed to open file- %s", WEBCFG_DB_STORE);
         return;
     }
     int wret = fwrite(pText, 1, strlen(pText), fpw);
@@ -318,13 +319,13 @@ void writeToFile(char* pText)
 }
 
 
-cJSON * convertWebCfgDataToJson()
+cJSON *convertWebCfgDataToJson()
 {
     cJSON *pWebCfg = cJSON_CreateObject();
     if (pWebCfg)
     {
         cJSON *pRfc = cJSON_CreateString(webCfgPersist.m_rfcStatus);
-        cJSON *pUrl= cJSON_CreateString(webCfgPersist.m_url);
+        cJSON *pUrl = cJSON_CreateString(webCfgPersist.m_url);
         cJSON *pTeleSuplUrl = cJSON_CreateString(webCfgPersist.m_teleSuplUrl);
 
         cJSON_AddItemToObject(pWebCfg, WEBCFG_URL_PARAM, pUrl);
@@ -345,11 +346,10 @@ void populatePersistenceData()
         cJSON *pTeleSuplUrl = cJSON_GetObjectItem(pParser, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM);
         cJSON *pRfc = cJSON_GetObjectItem(pParser, WEBCFG_RFC_PARAM);
 
-        snprintf(webCfgPersist.m_url, 1024, "%s",cJSON_GetStringValue(pUrl));
+        snprintf(webCfgPersist.m_url, 1024, "%s", cJSON_GetStringValue(pUrl));
         snprintf(webCfgPersist.m_teleSuplUrl, 1024, "%s", cJSON_GetStringValue(pTeleSuplUrl));
         snprintf(webCfgPersist.m_rfcStatus, 16, "%s", cJSON_GetStringValue(pRfc));
-    }
-    else
+    } else
     {
         char *pPartnerId = NULL;
         pPartnerId = getPartnerID();
@@ -372,54 +372,54 @@ void populatePersistenceData()
     }
 }
 
-int Get_Webconfig_URL( char *pString)
+int Get_Webconfig_URL(char *pString)
 {
     if (!isInited)
     {
         populatePersistenceData();
         isInited = true;
     }
-    snprintf (pString, 1024, "%s", webCfgPersist.m_url);
+    snprintf(pString, 1024, "%s", webCfgPersist.m_url);
     return RETURN_OK;
 }
 
-int Set_Webconfig_URL( char *pString)
+int Set_Webconfig_URL(char *pString)
 {
     snprintf(webCfgPersist.m_url, 1024, "%s", pString);
-    cJSON * pWebCfg = convertWebCfgDataToJson();
+    cJSON *pWebCfg = convertWebCfgDataToJson();
     if (pWebCfg)
     {
-            char* pString = cJSON_Print(pWebCfg);
-            writeToFile(pString);
-            cJSON_Delete(pWebCfg);
+        char *pString = cJSON_Print(pWebCfg);
+        writeToFile(pString);
+        cJSON_Delete(pWebCfg);
     }
 
     return RETURN_OK;
 }
 
-int Get_Supplementary_URL( char *name, char *pString)
+int Get_Supplementary_URL(char *name, char *pString)
 {
     if (!isInited)
     {
         populatePersistenceData();
         isInited = true;
     }
-    (void) name;
-    snprintf (pString, 1024, "%s", webCfgPersist.m_teleSuplUrl);
+    (void)name;
+    snprintf(pString, 1024, "%s", webCfgPersist.m_teleSuplUrl);
     return RETURN_OK;
 }
 
 
-int Set_Supplementary_URL( char *name, char *pString)
+int Set_Supplementary_URL(char *name, char *pString)
 {
-    (void) name;
+    (void)name;
     snprintf(webCfgPersist.m_teleSuplUrl, 1024, "%s", pString);
-    cJSON * pWebCfg = convertWebCfgDataToJson();
+    cJSON *pWebCfg = convertWebCfgDataToJson();
     if (pWebCfg)
     {
-            char* pString = cJSON_Print(pWebCfg);
-            writeToFile(pString);
-            cJSON_Delete(pWebCfg);
+        char *pString = cJSON_Print(pWebCfg);
+        writeToFile(pString);
+        cJSON_Delete(pWebCfg);
     }
     return RETURN_OK;
 }
@@ -429,42 +429,38 @@ int rbus_StoreValueIntoDB(char *paramName, char *value)
 {
     int ret = RETURN_ERR;
 
-    if (strncmp(paramName,PARAM_RFC_ENABLE,WEBCFG_MAX_PARAM_LEN) == 0)
+    if (strncmp(paramName, PARAM_RFC_ENABLE, WEBCFG_MAX_PARAM_LEN) == 0)
     {
         snprintf(webCfgPersist.m_rfcStatus, 16, "%s", value);
-        WebcfgDebug("%s : Successfully stored [%s] = [%s]. \n",__func__,PARAM_RFC_ENABLE,value);
+        WebcfgDebug("%s : Successfully stored [%s] = [%s]. \n", __func__, PARAM_RFC_ENABLE, value);
         ret = RETURN_OK;
-    }
-    else if (strncmp(paramName,WEBCFG_RFC_PARAM,WEBCFG_MAX_PARAM_LEN) == 0)
+    } else if (strncmp(paramName, WEBCFG_RFC_PARAM, WEBCFG_MAX_PARAM_LEN) == 0)
     {
         snprintf(webCfgPersist.m_rfcStatus, 16, "%s", value);
-        WebcfgDebug("%s : Successfully stored [%s] = [%s]. \n",__func__, WEBCFG_RFC_PARAM, value);
+        WebcfgDebug("%s : Successfully stored [%s] = [%s]. \n", __func__, WEBCFG_RFC_PARAM, value);
         ret = RETURN_OK;
-    }
-    else if (strncmp(paramName,WEBCFG_URL_PARAM,WEBCFG_MAX_PARAM_LEN) == 0)
+    } else if (strncmp(paramName, WEBCFG_URL_PARAM, WEBCFG_MAX_PARAM_LEN) == 0)
     {
         snprintf(webCfgPersist.m_url, 1024, "%s", value);
-        WebcfgDebug("%s : Successfully stored [%s] = [%s]. \n",__func__,WEBCFG_URL_PARAM,value);
+        WebcfgDebug("%s : Successfully stored [%s] = [%s]. \n", __func__, WEBCFG_URL_PARAM, value);
         ret = RETURN_OK;
-    }
-    else if (strncmp(paramName,WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM,WEBCFG_MAX_PARAM_LEN) == 0)
+    } else if (strncmp(paramName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, WEBCFG_MAX_PARAM_LEN) == 0)
     {
         snprintf(webCfgPersist.m_teleSuplUrl, 1024, "%s", value);
-        WebcfgDebug("%s : Successfully stored [%s] = [%s]. \n",__func__,WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM,value);
+        WebcfgDebug("%s : Successfully stored [%s] = [%s]. \n", __func__, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, value);
         ret = RETURN_OK;
-    }
-    else
+    } else
     {
-        WebcfgError("Invalid Param Name (set)= %s\n",paramName);
+        WebcfgError("Invalid Param Name (set)= %s\n", paramName);
         goto error2;
     }
 
-    cJSON * pWebCfg = convertWebCfgDataToJson();
+    cJSON *pWebCfg = convertWebCfgDataToJson();
     if (pWebCfg)
     {
-            char* pString = cJSON_Print(pWebCfg);
-            writeToFile(pString);
-            cJSON_Delete(pWebCfg);
+        char *pString = cJSON_Print(pWebCfg);
+        writeToFile(pString);
+        cJSON_Delete(pWebCfg);
     }
 
 
@@ -472,7 +468,7 @@ error2:
     return ret;
 }
 
-int rbus_GetValueFromDB( char* paramName, char** paramValue)
+int rbus_GetValueFromDB(char *paramName, char **paramValue)
 {
     char value_str[256];
     int ret = RETURN_ERR;
@@ -483,32 +479,28 @@ int rbus_GetValueFromDB( char* paramName, char** paramValue)
         isInited = true;
     }
 
-    memset(value_str,0,sizeof(value_str));
-    if (strncmp(paramName,WEBCFG_RFC_PARAM,WEBCFG_MAX_PARAM_LEN) == 0)
+    memset(value_str, 0, sizeof(value_str));
+    if (strncmp(paramName, WEBCFG_RFC_PARAM, WEBCFG_MAX_PARAM_LEN) == 0)
     {
         *paramValue = strdup(webCfgPersist.m_rfcStatus);
         WebcfgDebug("%s : Successfully fetched [%s] = [%s]. \n",__func__,WEBCFG_RFC_PARAM,*paramValue);
         ret = RETURN_OK;
-    }
-    else if (strncmp(paramName,PARAM_RFC_ENABLE,WEBCFG_MAX_PARAM_LEN) == 0)
+    } else if (strncmp(paramName, PARAM_RFC_ENABLE, WEBCFG_MAX_PARAM_LEN) == 0)
     {
         *paramValue = strdup(webCfgPersist.m_rfcStatus);
-        WebcfgDebug("%s : Successfully fetched [%s] = [%s]. \n",__func__, PARAM_RFC_ENABLE, *paramValue);
+        WebcfgDebug("%s : Successfully fetched [%s] = [%s]. \n", __func__, PARAM_RFC_ENABLE, *paramValue);
         ret = RETURN_OK;
-    }
-    else if (strncmp(paramName,WEBCFG_URL_PARAM,WEBCFG_MAX_PARAM_LEN) == 0)
+    } else if (strncmp(paramName, WEBCFG_URL_PARAM, WEBCFG_MAX_PARAM_LEN) == 0)
     {
         *paramValue = strdup(webCfgPersist.m_url);
-        WebcfgDebug("%s : Successfully fetched [%s] = [%s]. \n",__func__,WEBCFG_URL_PARAM,*paramValue);
+        WebcfgDebug("%s : Successfully fetched [%s] = [%s]. \n", __func__, WEBCFG_URL_PARAM, *paramValue);
         ret = RETURN_OK;
-    }
-    else if (strncmp(paramName,WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM,WEBCFG_MAX_PARAM_LEN) == 0)
+    } else if (strncmp(paramName, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, WEBCFG_MAX_PARAM_LEN) == 0)
     {
         *paramValue = strdup(webCfgPersist.m_teleSuplUrl);
-        WebcfgDebug("%s : Successfully fetched [%s] = [%s]. \n",__func__,WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM,*paramValue);
+        WebcfgDebug("%s : Successfully fetched [%s] = [%s]. \n", __func__, WEBCFG_SUPPLEMENTARY_TELEMETRY_PARAM, *paramValue);
         ret = RETURN_OK;
-    }
-    else
+    } else
     {
         WebcfgError("Invalid Param Name (get)= %s\n",paramName);
     }
@@ -517,14 +509,14 @@ int rbus_GetValueFromDB( char* paramName, char** paramValue)
 
 void getValues_rbus(const char *paramName[], const unsigned int paramCount, int index, money_trace_spans *timeSpan, param_t ***paramArr, int *retValCount, WDMP_STATUS *retStatus)
 {
-	UNUSED(paramName);
-	UNUSED(paramCount);
-	UNUSED(index);
-	UNUSED(timeSpan);
-	UNUSED(paramArr);
-	UNUSED(retValCount);
-	UNUSED(retStatus);
-	return;
+    UNUSED(paramName);
+    UNUSED(paramCount);
+    UNUSED(index);
+    UNUSED(timeSpan);
+    UNUSED(paramArr);
+    UNUSED(retValCount);
+    UNUSED(retStatus);
+    return;
 }
 
 int rbus_waitUntilSystemReady()
@@ -533,11 +525,10 @@ int rbus_waitUntilSystemReady()
     int fd;
 
     WebcfgInfo("Checked CR - System is ready, proceed with webconfig startup\n");
-    if((fd = creat("/var/tmp/webcfgcacheready", S_IRUSR | S_IWUSR)) == -1)
+    if ((fd = creat("/var/tmp/webcfgcacheready", S_IRUSR | S_IWUSR)) == -1)
     {
         WebcfgError("/var/tmp/webcfgcacheready file creation failed with error:%d\n", errno);
-    }
-    else
+    } else
     {
         close(fd);
     }
